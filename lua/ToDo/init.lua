@@ -19,10 +19,26 @@ local todoList = {
   },
 }
 
+function TableConcat(t1,t2)
+   for i=1,#t2 do
+      t1[#t1+1] = t2[i]
+   end
+   return t1
+end
+
 local function getTodos(todos)
   local list = {}
-  for k,v in pairs(todos) do
-    list[k] = v.todo
+  local done = {}
+  for _,v in pairs(todos) do
+    if v.done == 0 then
+      table.insert(list, v.todo)
+    else
+      table.insert(done, v.todo)
+    end
+  end
+
+  for _,v in ipairs(done) do
+    table.insert(list, v)
   end
   return list
 end
@@ -36,12 +52,15 @@ local function indexOfTodo(todos, todo)
 end
 
 local function highlightDone(buf, todos)
-  for k,v in pairs(todos) do
+  local totalDone = 0
+  for _,v in pairs(todos)do
     if v.done == 1 then
-      vim.api.nvim_buf_add_highlight(buf, -1, "Keyword", k-1, 0, -1)
-    else
-      vim.api.nvim_buf_add_highlight(buf, -1, "Identifier", k-1, 0, -1)
+      totalDone = totalDone+1
     end
+  end
+
+  for i = 0, totalDone do
+      vim.api.nvim_buf_add_highlight(buf, -1, "Keyword", #todos - totalDone + i, 0, -1)
   end
 end
 
@@ -70,7 +89,7 @@ function ShowMenu(todos)
     else
       todos[index].done = 1
     end
-    highlightDone(buf, todos)
+    updateUi(buf, todos)
   end
 
   local function removeToDo()
