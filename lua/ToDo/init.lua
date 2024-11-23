@@ -1,76 +1,60 @@
 local popup = require("plenary.popup")
 
 local todoList = {
-  {
-    todo = "Todo 1",
-    done = 1,
+  tasks = {
+    "Finish prject 1",
+    "crate dola func",
   },
-  {
-    todo = "Todo 2",
-    done = 0,
-  },
-  {
-    todo = "Todo 3",
-    done = 1,
-  },
-  {
-    todo = "Todo 4",
-    done = 0,
-  },
+  done = {
+    "print hello world",
+    "make for loop",
+  }
 }
-
-function TableConcat(t1,t2)
-   for i=1,#t2 do
-      t1[#t1+1] = t2[i]
-   end
-   return t1
-end
 
 local function getTodos(todos)
   local list = {}
-  local done = {}
-  for _,v in pairs(todos) do
-    if v.done == 0 then
-      table.insert(list, v.todo)
-    else
-      table.insert(done, v.todo)
-    end
-  end
 
-  for _,v in ipairs(done) do
+  for _,v in pairs(todos.tasks) do
     table.insert(list, v)
   end
+
+  for _,v in pairs(todos.done) do
+    table.insert(list, v)
+  end
+
   return list
 end
 
 local function indexOfTodo(todos, todo)
   for k,v in pairs(todos) do
-    if v.todo == todo then
+    if v == todo then
       return k
     end
   end
 end
 
-local function highlightDone(buf, todos)
-  local totalDone = 0
-  for _,v in pairs(todos)do
-    if v.done == 1 then
-      totalDone = totalDone+1
+local function todoDone(todos, todo)
+  for _,v in pairs(todos.tasks) do
+    if v == todo then
+      return 0
     end
   end
+  return 1
+end
 
-  for i = 0, totalDone do
-      vim.api.nvim_buf_add_highlight(buf, -1, "Keyword", #todos - totalDone + i, 0, -1)
+local function highlightDone(buf, todos)
+  for i = 0, #todos.done do
+      vim.api.nvim_buf_add_highlight(buf, -1, "Keyword", #todos.tasks + i, 0, -1)
   end
 end
 
 local function updateUi(buf, todos)
+  vim.api.nvim_buf_clear_namespace(buf, -1, 0, -1)
   vim.api.nvim_buf_set_option(buf, 'modifiable', true)
   vim.api.nvim_buf_set_option(buf, 'readonly', false)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, getTodos(todos))
   vim.api.nvim_buf_set_option(buf, 'modifiable', false)
   vim.api.nvim_buf_set_option(buf, 'readonly', true)
-
   highlightDone(buf, todos)
 end
 
@@ -82,29 +66,32 @@ function ShowMenu(todos)
 
   local function mark()
     local line = vim.api.nvim_get_current_line()
-    local index = indexOfTodo(todos, line)
-    vim.api.nvim_buf_clear_namespace(buf, -1, 0, -1)
-    if todos[index].done == 1 then
-      todos[index].done = 0
+    if todoDone(todos, line) == 1 then
+      local index = indexOfTodo(todos.done, line)
+      table.remove(todos.done, index)
+      table.insert(todos.tasks, line)
     else
-      todos[index].done = 1
+      local index = indexOfTodo(todos.tasks, line)
+      table.remove(todos.tasks, index)
+      table.insert(todos.done, 1, line)
     end
     updateUi(buf, todos)
   end
 
   local function removeToDo()
     local line = vim.api.nvim_get_current_line()
-    local index = indexOfTodo(todos, line)
-    table.remove(todos, index)
+    if todoDone(todos, line) == 1 then
+      local index = indexOfTodo(todos.done, line)
+      table.remove(todos.done, index)
+    else
+      local index = indexOfTodo(todos.tasks, line)
+      table.remove(todos.tasks, index)
+    end
     updateUi(buf, todos)
   end
 
   local function createTodo()
-    local todo = {
-      todo = "",
-      done = 0,
-    }
-    table.insert(todos, 1, todo)
+    table.insert(todos.tasks, 1, "")
     updateUi(buf, todos)
     vim.api.nvim_win_set_cursor(0, {1,0})
     vim.api.nvim_buf_set_option(buf, 'modifiable', true)
@@ -115,8 +102,19 @@ function ShowMenu(todos)
   local function appendTodo()
     vim.api.nvim_command("stopinsert")
     local line = vim.api.nvim_get_current_line()
-    todos[1].todo = line
+    local lineNum = vim.api.nvim_win_get_cursor(buf)
+    if lineNum[1] > #todos.tasks then
+      todos.done[lineNum[1]] = line
+    else
+      todos.tasks[lineNum[1]] = line
+    end
     updateUi(buf, todos)
+  end
+
+  local function editTodo()
+    vim.api.nvim_buf_set_option(buf, 'modifiable', true)
+    vim.api.nvim_buf_set_option(buf, 'readonly', false)
+    vim.api.nvim_command("startinsert")
   end
 
   Win_id = popup.create(buf, {
