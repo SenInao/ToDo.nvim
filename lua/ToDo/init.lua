@@ -102,9 +102,9 @@ function ShowMenu(todos)
   local function appendTodo()
     vim.api.nvim_command("stopinsert")
     local line = vim.api.nvim_get_current_line()
-    local lineNum = vim.api.nvim_win_get_cursor(buf)
+    local lineNum = vim.api.nvim_win_get_cursor(0)
     if lineNum[1] > #todos.tasks then
-      todos.done[lineNum[1]] = line
+      todos.done[lineNum[1] - #todos.tasks] = line
     else
       todos.tasks[lineNum[1]] = line
     end
@@ -145,7 +145,17 @@ function ShowMenu(todos)
     silent = true,
     callback = createTodo
   })
+  vim.api.nvim_buf_set_keymap(buf, "n", "e", "", {
+    noremap = true,
+    silent = true,
+    callback = editTodo
+  })
   vim.api.nvim_buf_set_keymap(buf, "i", "<CR>", "", {
+    noremap = true,
+    silent = true,
+    callback = appendTodo
+  })
+  vim.api.nvim_buf_set_keymap(buf, "i", "<Esc>", "", {
     noremap = true,
     silent = true,
     callback = appendTodo
