@@ -33,13 +33,21 @@ end
 
 local function getTodosPath()
   local cwd = vim.fn.getcwd()
-  cwd = cwd:gsub("/", "-"):sub(2)
-  return os.getenv("HOME") .. "/todos/" .. cwd .. ".txt"
+  cwd = cwd:gsub("\\", "-")
+  local home_dir
+  if vim.fn.has('win32') == 1 or vim.fn.has('win64') == 1 then
+    cwd = cwd:sub(4)
+    home_dir = os.getenv("USERPROFILE")
+  else
+    cwd = cwd:sub(2)
+    home_dir = os.getenv("HOME")
+  end
+
+  return home_dir .. "\\todos\\" .. cwd .. ".txt"
 end
 
 local function getTodos()
   local path = getTodosPath()
-  print(path)
   local file = io.open(path, "r")
 
   local content = ""
