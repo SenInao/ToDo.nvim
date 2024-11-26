@@ -3,18 +3,14 @@ local ToDo = require("ToDo.actions")
 local function getTodosPath()
   local cwd = vim.fn.getcwd()
   local home_dir
-  local seperator
   if vim.fn.has('win32') == 1 or vim.fn.has('win64') == 1 then
-    seperator = "\\"
     cwd = cwd:gsub("\\", "-"):sub(4)
-    home_dir = os.getenv("USERPROFILE")
+    home_dir = os.getenv("USERPROFILE") .. "\\appdata\\local\\nvim-data\\ToDo\\"
   else
-    seperator = "/"
     cwd = cwd:gsub("/", "-"):sub(2)
-    home_dir = os.getenv("HOME")
+    home_dir = os.getenv("HOME") .. "/.local/share/nvim/ToDo/"
   end
-
-  return home_dir .. seperator .. "todos" .. seperator .. cwd .. ".txt"
+  return home_dir .. cwd .. ".txt"
 end
 
 local function writeTodos(todos)
